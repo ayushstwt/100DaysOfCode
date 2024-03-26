@@ -1,6 +1,7 @@
 package com.narainox.journalApp.service;
 
 import com.narainox.journalApp.entity.JournalEntry;
+import com.narainox.journalApp.exception.ResourceNotFound;
 import com.narainox.journalApp.repository.JournalEntryRepository;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,10 +16,10 @@ public class JournalEntryService {
     @Autowired
     private JournalEntryRepository journalEntryRepository;
 
-    public void saveEntry(JournalEntry journalEntry)
+    public JournalEntry saveEntry(JournalEntry journalEntry)
     {
         journalEntry.setDate(LocalDate.now());
-        journalEntryRepository.save(journalEntry);
+        return journalEntryRepository.save(journalEntry);
     }
 
     public List<JournalEntry> getAllJournalEntry()
@@ -26,29 +27,31 @@ public class JournalEntryService {
         return journalEntryRepository.findAll();
     }
 
-    public Optional<JournalEntry> getJournalEntryById(ObjectId myid)
+    public JournalEntry getJournalEntryById(ObjectId myid)
     {
-        return journalEntryRepository.findById(myid);
+        JournalEntry journalEntry = journalEntryRepository
+                .findById(myid)
+                .orElseThrow(() -> new ResourceNotFound("JournalEntry", "JournEntryId", myid));
+        return journalEntry;
     }
 
     public void deleteJournalEntryById(ObjectId myid)
     {
-        journalEntryRepository.deleteById(myid);
+        JournalEntry journalEntry = journalEntryRepository
+                .findById(myid)
+                .orElseThrow(() -> new ResourceNotFound("JournalEntry", "JournEntryId", myid));
+        journalEntryRepository.delete(journalEntry);
     }
 
     public JournalEntry updateJournalEntry(ObjectId myid,JournalEntry journalEntry)
     {
-        JournalEntry entry = journalEntryRepository.findById(myid).orElse(null);
-        if (entry !=null)
-        {
-            entry.setContent(journalEntry.getContent());
-            entry.setTitle(journalEntry.getTitle());
-            journalEntryRepository.save(entry);
-            return entry;
-        }
-        else {
-            return entry;
-        }
+        JournalEntry oldEntry = journalEntryRepository
+                .findById(myid)
+                .orElseThrow(() -> new ResourceNotFound("JournalEntry", "JournEntryId", myid));
+        oldEntry.setTitle(journalEntry.getTitle());
+        oldEntry.setContent(journalEntry.getContent());
+        journalEntryRepository.save(oldEntry);
+        return oldEntry;
     }
 
 }
